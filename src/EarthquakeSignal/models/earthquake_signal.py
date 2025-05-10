@@ -91,8 +91,10 @@ class EarthquakeSignal:
             self.plot_rotd()
 
     def _load_signal(self):
-        loader = SignalLoader(self.filepath, self.config.get('file_extension', '.AT2'))
+        loader = SignalLoader(self.filepath, self.config['file_extension'])
         self.dt, self.signals_raw = loader.read()
+        unit_factor = self.config['unit_factor']
+        self.signals_raw = {k: v / unit_factor for k, v in self.signals_raw.items()}
         first_filename = list(self.signals_raw.keys())[0]
         match = re.search(r'(RSN\d+)', first_filename.upper())
         self.name = match.group(1) if match else os.path.basename(self.filepath)

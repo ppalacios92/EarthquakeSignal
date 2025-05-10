@@ -1,15 +1,16 @@
 """
 Description:
     This module defines the EarthquakeBatchProcessor class, which scans a folder of seismic signal
-    files, groups them by RSN identifier, and instantiates EarthquakeSignal objects for each set.
-    It supports batch processing of multiple earthquake records in a clean and modular way.
+    files (.AT2, .TXT, etc.), groups them by RSN identifier or fallback to filename prefix, and 
+    instantiates EarthquakeSignal objects for each group. It supports batch processing of both 
+    NGA-West2 and custom-named records, ensuring each temporary folder reflects the identifier.
 
 Date:
-    2025-05-01
+    2025-05-10
 """
 
 __author__ = "Ing. Patricio Palacios B., M.Sc."
-__version__ = "1.0.0"
+__version__ = "1.1.0"
 
 import os
 import shutil
@@ -19,7 +20,7 @@ from EarthquakeSignal.models.earthquake_signal import EarthquakeSignal
 
 class EarthquakeBatchProcessor:
     """
-    Processes multiple earthquake records grouped by RSN prefix in a target folder.
+    Processes multiple earthquake records grouped by RSN or filename prefix in a target folder.
     """
 
     def __init__(self, folder_path, config):
@@ -27,7 +28,7 @@ class EarthquakeBatchProcessor:
         Parameters
         ----------
         folder_path : str
-            Path to the directory containing .AT2 files.
+            Path to the directory containing .AT2 or .TXT files.
         config : dict
             Configuration dictionary used to control each EarthquakeSignal instance.
         """
@@ -37,66 +38,73 @@ class EarthquakeBatchProcessor:
 
     def process_all(self):
         """
-        Process all RSN groups found in the input folder.
+        Process all groups found in the input folder.
 
         Returns
         -------
         dict
-            Dictionary of EarthquakeSignal instances keyed by RSN ID.
+            Dictionary of EarthquakeSignal instances keyed by RSN or prefix.
         """
-        rsn_groups = self._group_by_rsn()
-        for rsn, filelist in rsn_groups.items():
-            self._process_rsn_group(rsn, filelist)
+        grouped_files = self._group_by_identifier()
+        for group_id, filelist in grouped_files.items():
+            self._process_group(group_id, filelist)
         return self.earthquakes
 
-    def _group_by_rsn(self):
+    def _group_by_identifier(self):
         """
-        Groups filenames based on the RSN identifier (e.g., RSN123).
+        Groups files by RSN (e.g., RSN123) or fallback to prefix before first underscore.
 
         Returns
         -------
         dict
-            Dictionary where keys are RSN identifiers and values are lists of filenames.
+            Dictionary of grouped files by identifier.
         """
-        files = [f for f in os.listdir(self.folder_path) if f.upper().endswith('.AT2')]
-        rsn_groups = {}
+        ext = self.config.get("file_extension", ".AT2").upper()
+        files = [f for f in os.listdir(self.folder_path) if f.upper().endswith(ext)]
+        groups = {}
 
         for file in files:
-            match = re.search(r'(RSN\d+)', file.upper())
+            upper_file = file.upper()
+            match = re.search(r'(RSN\d+)', upper_file)
             if match:
-                rsn = match.group(1)
-                rsn_groups.setdefault(rsn, []).append(file)
+                group_id = match.group(1)
+            elif "_" in file:
+                group_id = file.split("_")[0]
             else:
-                print(f"[WARNING] No RSN identifier found in file: {file}")
+                group_id = os.path.splitext(file)[0]  # Use entire filename if no underscores
 
-        return rsn_groups
+            groups.setdefault(group_id, []).append(file)
 
-    def _process_rsn_group(self, rsn, filelist):
+        return groups
+
+    def _process_group(self, group_id, filelist):
         """
-        Processes a single RSN group by creating a temporary folder and instantiating EarthquakeSignal.
+        Process a group by creating a named folder and instantiating EarthquakeSignal.
 
         Parameters
         ----------
-        rsn : str
-            The RSN identifier (e.g., 'RSN123').
+        group_id : str
+            Identifier (RSN or filename prefix).
         filelist : list of str
-            List of filenames belonging to this RSN.
+            List of filenames in this group.
         """
-        temp_dir = os.path.join(self.folder_path, f'_temp_{rsn}')
+        temp_dir = os.path.join(self.folder_path, group_id)
         os.makedirs(temp_dir, exist_ok=True)
 
-        for file in filelist:
-            shutil.copy(os.path.join(self.folder_path, file), temp_dir)
+        try:
+            for file in filelist:
+                shutil.copy(os.path.join(self.folder_path, file), temp_dir)
 
-        eq = EarthquakeSignal(temp_dir, self.config)
-        eq.load_and_process()
-        self.earthquakes[rsn] = eq
+            eq = EarthquakeSignal(temp_dir, self.config)
+            eq.load_and_process()
+            self.earthquakes[group_id] = eq
 
-        shutil.rmtree(temp_dir)
+        finally:
+            shutil.rmtree(temp_dir)
 
     def export_to_globals(self):
         """
-        Optionally push each processed EarthquakeSignal to the global namespace using its RSN ID.
+        Optionally push each processed EarthquakeSignal to the global namespace using its ID.
         """
-        for rsn, obj in self.earthquakes.items():
-            globals()[rsn] = obj
+        for group_id, obj in self.earthquakes.items():
+            globals()[group_id] = obj
