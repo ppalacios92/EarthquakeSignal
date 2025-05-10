@@ -1,4 +1,4 @@
-📁 EarthquakeSignal
+📁 EarthquakeSignal  
 ├── README.md  
 ├── setup.py  
 ├── 📁 src  
