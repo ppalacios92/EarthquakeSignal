@@ -95,9 +95,6 @@ class EarthquakeSignal:
         self.dt, self.signals_raw = loader.read()
         unit_factor = self.config['unit_factor']
         self.signals_raw = {k: v / unit_factor for k, v in self.signals_raw.items()}
-        first_filename = list(self.signals_raw.keys())[0]
-        match = re.search(r'(RSN\d+)', first_filename.upper())
-        self.name = match.group(1) if match else os.path.basename(self.filepath)
 
     def _identify_components(self):
         self.signals, self.component_names = SignalComponentIdentifier.identify(self.signals_raw)

@@ -2,17 +2,18 @@
 Description:
     This module defines the EarthquakeComparisonPlotter class for visualizing
     original and baseline-corrected ground motion signals in terms of acceleration,
-    velocity, and displacement.
+    velocity, and displacement for all components (H1, H2, V) in separate rows.
 
 Date:
-    2025-05-01
+    2025-05-10
 """
 
 __author__ = "Ing. Patricio Palacios B., M.Sc."
-__version__ = "1.0.0"
+__version__ = "1.1.0"
 
 import matplotlib.pyplot as plt
 import numpy as np
+
 
 class EarthquakeComparisonPlotter:
     """
@@ -30,54 +31,61 @@ class EarthquakeComparisonPlotter:
 
     def plot_corrected_signals(self):
         """
-        Plot comparison of original and corrected signals in three horizontal subplots:
-        acceleration, velocity, and displacement (all from component H1).
+        Plot comparison of original and corrected signals in three rows (H1, H2, V),
+        each showing acceleration, velocity, and displacement.
         """
-        comp = 'H1'
-        time = np.arange(len(self.eq.signals[comp])) * self.eq.dt
+        components = ['H1', 'H2', 'V']
+        time = np.arange(len(self.eq.signals['H1'])) * self.eq.dt
 
-        acc_raw = self.eq.signals[comp]*9.81
+        fig, axs = plt.subplots(3, 3, figsize=(15, 9), sharex=True)
+        fig.suptitle(f'Signal Treatment - {self.eq.name}', fontsize=13, fontweight='bold')
 
-        vel_raw = np.cumsum((acc_raw[:-1] + acc_raw[1:]) / 2) * self.eq.dt
-        vel_raw = np.insert(vel_raw, 0, 0.0)
-        disp_raw = np.zeros_like(acc_raw)
-        for i in range(1, len(acc_raw)):
-            disp_raw[i] = disp_raw[i-1] + vel_raw[i-1]*self.eq.dt + (2*acc_raw[i-1] + acc_raw[i])*self.eq.dt**2/6
+        for row, comp in enumerate(components):
+            # Convert acceleration to m/s²
+            acc_raw = self.eq.signals[comp] * 9.81
 
-        acc_corr = self.eq.corrected_acc[comp]
-        vel_corr = self.eq.corrected_vel[comp]
-        disp_corr = self.eq.corrected_disp[comp]
+            # Integrate to velocity and displacement (original)
+            vel_raw = np.cumsum((acc_raw[:-1] + acc_raw[1:]) / 2) * self.eq.dt
+            vel_raw = np.insert(vel_raw, 0, 0.0)
 
-        fig, axs = plt.subplots(1, 3, figsize=(15, 3.5), sharex=True)
-        fig.suptitle(f'Signal Treatment - {self.eq.name}', fontsize=11, fontweight='bold')
-        acc_raw=acc_raw/9.81
-        axs[0].plot(time, acc_raw, linestyle='--', color='gray', linewidth=0.8, label='Original')
-        axs[0].plot(time, acc_corr, color='blue', linewidth=0.8, label='Corrected')
-        axs[0].set_xlim(left=0)
-        axs[0].set_title('Acceleration', fontsize=10, fontweight='bold')
-        axs[0].set_xlabel('Time [s]', fontsize=9)
-        axs[0].set_ylabel('Acceleration [g]', fontsize=9)
-        axs[0].legend(fontsize=9)
-        axs[0].tick_params(axis='both', labelsize=9)
-        axs[0].grid(True)
+            disp_raw = np.zeros_like(acc_raw)
+            for i in range(1, len(acc_raw)):
+                disp_raw[i] = disp_raw[i-1] + vel_raw[i-1]*self.eq.dt + (2*acc_raw[i-1] + acc_raw[i])*self.eq.dt**2/6
 
-        axs[1].plot(time, vel_raw, linestyle='--', color='gray', linewidth=0.8, label='Original')
-        axs[1].plot(time, vel_corr, color='blue', linewidth=0.8, label='Corrected')
-        axs[1].set_xlim(left=0)
-        axs[1].set_title('Velocity', fontsize=10, fontweight='bold')
-        axs[1].set_xlabel('Time [s]', fontsize=9)
-        axs[1].set_ylabel('Velocity [m/s]', fontsize=9)
-        axs[1].legend(fontsize=9)
-        axs[1].tick_params(axis='both', labelsize=9)
-        axs[1].grid(True)
+            # Corrected signals
+            acc_corr = self.eq.corrected_acc[comp]
+            vel_corr = self.eq.corrected_vel[comp]
+            disp_corr = self.eq.corrected_disp[comp]
 
-        axs[2].plot(time, disp_raw, linestyle='--', color='gray', linewidth=0.8, label='Original')
-        axs[2].plot(time, disp_corr, color='blue', linewidth=0.8, label='Corrected')
-        axs[2].set_xlim(left=0)
-        axs[2].set_title('Displacement', fontsize=10, fontweight='bold')
-        axs[2].set_xlabel('Time [s]', fontsize=9)
-        axs[2].set_ylabel('Displacement [m]', fontsize=9)
-        axs[2].legend(fontsize=9)
-        axs[2].tick_params(axis='both', labelsize=9)
-        axs[2].grid(True)
+            # Aceleración
+            axs[row, 0].plot(time, acc_raw / 9.81, linestyle='--', color='gray', linewidth=0.8, label='Original')
+            axs[row, 0].plot(time, acc_corr, color='blue', linewidth=0.8, label='Corrected')
+            axs[row, 0].set_ylabel('g', fontsize=9)
+            axs[row, 0].set_title(f'{comp} - Acceleration', fontsize=10, fontweight='bold')
+            axs[row, 0].legend(fontsize=8)
+            axs[row, 0].grid(True)
+            axs[row, 0].tick_params(axis='both', labelsize=8)
+
+            # Velocidad
+            axs[row, 1].plot(time, vel_raw, linestyle='--', color='gray', linewidth=0.8, label='Original')
+            axs[row, 1].plot(time, vel_corr, color='blue', linewidth=0.8, label='Corrected')
+            axs[row, 1].set_ylabel('m/s', fontsize=9)
+            axs[row, 1].set_title(f'{comp} - Velocity', fontsize=10, fontweight='bold')
+            axs[row, 1].legend(fontsize=8)
+            axs[row, 1].grid(True)
+            axs[row, 1].tick_params(axis='both', labelsize=8)
+
+            # Desplazamiento
+            axs[row, 2].plot(time, disp_raw, linestyle='--', color='gray', linewidth=0.8, label='Original')
+            axs[row, 2].plot(time, disp_corr, color='blue', linewidth=0.8, label='Corrected')
+            axs[row, 2].set_ylabel('m', fontsize=9)
+            axs[row, 2].set_title(f'{comp} - Displacement', fontsize=10, fontweight='bold')
+            axs[row, 2].legend(fontsize=8)
+            axs[row, 2].grid(True)
+            axs[row, 2].tick_params(axis='both', labelsize=8)
+
+        for col in range(3):
+            axs[2, col].set_xlabel('Time [s]', fontsize=9)
+
+        plt.subplots_adjust(hspace=0.4, wspace=0.25)
         plt.show()

@@ -3,14 +3,15 @@ Description:
     This module defines the EarthquakeBatchProcessor class, which scans a folder of seismic signal
     files (.AT2, .TXT, etc.), groups them by RSN identifier or fallback to filename prefix, and 
     instantiates EarthquakeSignal objects for each group. It supports batch processing of both 
-    NGA-West2 and custom-named records, ensuring each temporary folder reflects the identifier.
+    NGA-West2 and custom-named records, including two-column formats where dt is implicit from time
+    and acceleration is in the second column.
 
 Date:
     2025-05-10
 """
 
 __author__ = "Ing. Patricio Palacios B., M.Sc."
-__version__ = "1.1.0"
+__version__ = "1.2.0"
 
 import os
 import shutil
@@ -93,8 +94,27 @@ class EarthquakeBatchProcessor:
 
         try:
             for file in filelist:
-                shutil.copy(os.path.join(self.folder_path, file), temp_dir)
+                src_path = os.path.join(self.folder_path, file)
+                dst_path = os.path.join(temp_dir, file)
 
+                # Detect if it's a 2-column signal (dt, acceleration)
+                with open(src_path, 'r') as f:
+                    lines = [line.strip() for line in f if line.strip()]
+                    if len(lines) >= 2 and len(lines[0].split()) == 2:
+                        # Es un archivo tipo: tiempo/aceleración. Convertir a aceleración con dt.
+                        time1, _ = map(float, lines[0].split())
+                        time2, _ = map(float, lines[1].split())
+                        dt = time2 - time1
+                        acc = [line.split()[1] for line in lines]
+                        with open(dst_path, 'w') as out:
+                            out.write(f"NPTS={len(acc)}, DT={dt:.6f}\n")
+                            for a in acc:
+                                out.write(f"{a}\n")
+                    else:
+                        # Copiar tal cual si ya tiene formato estándar
+                        shutil.copy(src_path, dst_path)
+
+            # Procesar con EarthquakeSignal
             eq = EarthquakeSignal(temp_dir, self.config)
             eq.load_and_process()
             self.earthquakes[group_id] = eq

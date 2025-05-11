@@ -1,50 +1,94 @@
 """
 Description:
     This module provides a class for identifying the horizontal and vertical components
-    of a seismic signal based on RMS (Root Mean Square) energy.
+    of a seismic signal based on filename suffix or RMS (Root Mean Square) energy.
 
-    The method assumes that the record contains exactly 3 signals, where the vertical
-    component is typically the one with the lowest RMS value.
+    Priority is given to filename-based identification when filenames end with
+    _X, _Y, or _Z (before extension), corresponding to components H1, H2, and V.
+    If this fails, fallback to energy-based identification is used.
 
 Date:
-    2025-05-01
+    2025-05-10
 """
 
 __author__ = "Ing. Patricio Palacios B., M.Sc."
-__version__ = "1.0.0"
+__version__ = "1.2.0"
 
 import numpy as np
+import os
+
 
 class SignalComponentIdentifier:
     """
-    Identifies the V, H1, and H2 components in a set of 3 seismic signals based on RMS.
+    Identifies the V, H1, and H2 components in a set of 3 seismic signals.
     """
 
     @staticmethod
     def identify(signals: dict):
+        """
+        Identify the three seismic components: H1, H2, and V.
+
+        Parameters
+        ----------
+        signals : dict
+            Dictionary where keys are filenames and values are numpy arrays of the signals.
+
+        Returns
+        -------
+        identified : dict
+            Dictionary with keys 'H1', 'H2', 'V' and signal arrays as values.
+
+        names : dict
+            Dictionary mapping 'H1', 'H2', 'V' to the original filename keys.
+
+        Raises
+        ------
+        ValueError
+            If fewer or more than 3 signals are provided or identification fails.
+        """
         if len(signals) != 3:
             raise ValueError("Exactly 3 signals are required to identify components.")
 
-        rms_values = {}
-        for name, signal in signals.items():
-            rms = np.sqrt(np.mean(signal**2))
-            rms_values[name] = rms
+        identified = {}
+        names = {}
 
-        # Sort signals by RMS (ascending): lowest is likely vertical
-        sorted_signals = sorted(rms_values.items(), key=lambda x: x[1])
-        vertical_name = sorted_signals[0][0]
-        horizontal_names = [sorted_signals[1][0], sorted_signals[2][0]]
+        # --- Try to identify based on filename endings: _X, _Y, _Z ---
+        filename_map = {'_X': 'H1', '_Y': 'H2', '_Z': 'V'}
 
-        identified = {
-            'V': signals[vertical_name],
-            'H1': signals[horizontal_names[0]],
-            'H2': signals[horizontal_names[1]],
-        }
+        for key in signals.keys():
+            basename = os.path.splitext(os.path.basename(key))[0]  # remove extension
+            for suffix, label in filename_map.items():
+                if basename.upper().endswith(suffix):
+                    if label in identified:
+                        raise ValueError(f"Duplicate component label detected for {label}")
+                    identified[label] = signals[key]
+                    names[label] = key
+                    break  # exit suffix loop once matched
 
-        names = {
-            'V': vertical_name,
-            'H1': horizontal_names[0],
-            'H2': horizontal_names[1]
-        }
+        # --- Fallback to RMS-based identification if incomplete ---
+        if len(identified) < 3:
+            # Collect remaining signals
+            remaining = {
+                name: signal for name, signal in signals.items()
+                if name not in names.values()
+            }
+
+            # Compute RMS for remaining signals
+            rms_values = {
+                name: np.sqrt(np.mean(signal**2))
+                for name, signal in remaining.items()
+            }
+
+            # Sort remaining by RMS: lowest → vertical (V), others → H1 and H2
+            sorted_rms = sorted(rms_values.items(), key=lambda x: x[1])
+            fallback_labels = [lbl for lbl in ['V', 'H1', 'H2'] if lbl not in identified]
+
+            for (fname, _), label in zip(sorted_rms, fallback_labels):
+                identified[label] = signals[fname]
+                names[label] = fname
+
+        # --- Final validation ---
+        if set(identified.keys()) != {'H1', 'H2', 'V'}:
+            raise RuntimeError("Failed to assign all three components (H1, H2, V).")
 
         return identified, names
