@@ -12,6 +12,7 @@ __version__ = "1.0.0"
 
 import matplotlib.pyplot as plt
 import numpy as np
+import os
 
 class EarthquakePlotter:
     """
@@ -27,7 +28,7 @@ class EarthquakePlotter:
         """
         self.eq = eq
 
-    def plot_original_signals(self):
+    def plot_original_signals(self, save_svg=False):
         """
         Plot the original signals for H1, H2, and V in three horizontal subplots (1 row, 3 columns).
         All fonts are standardized for consistent visualization.
@@ -49,4 +50,16 @@ class EarthquakePlotter:
             axs[i].grid(True)
 
         fig.suptitle(f'Original Ground Motions - {self.eq.name}', fontsize=11, fontweight='bold')
+        
+        project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', '..'))
+        output_path = os.path.join(project_root, 'outputs', self.eq.name)
+        # --- Save to SVG if requested ---
+        if save_svg:
+            project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', '..'))
+            output_path = os.path.join(project_root, 'outputs', self.eq.name)
+            os.makedirs(output_path, exist_ok=True)
+            file_path = os.path.join(output_path, "original_ground_motions.svg")
+            plt.savefig(file_path, format="svg")
+        
+
         plt.show()

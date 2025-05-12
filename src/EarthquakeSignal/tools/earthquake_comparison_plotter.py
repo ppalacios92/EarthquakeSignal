@@ -13,7 +13,7 @@ __version__ = "1.1.0"
 
 import matplotlib.pyplot as plt
 import numpy as np
-
+import os
 
 class EarthquakeComparisonPlotter:
     """
@@ -29,7 +29,7 @@ class EarthquakeComparisonPlotter:
         """
         self.eq = eq
 
-    def plot_corrected_signals(self):
+    def plot_corrected_signals(self, save_svg=False):
         """
         Plot comparison of original and corrected signals in three rows (H1, H2, V),
         each showing acceleration, velocity, and displacement.
@@ -88,4 +88,17 @@ class EarthquakeComparisonPlotter:
             axs[2, col].set_xlabel('Time [s]', fontsize=9)
 
         plt.subplots_adjust(hspace=0.4, wspace=0.25)
+
+        project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', '..'))
+        output_path = os.path.join(project_root, 'outputs', self.eq.name)
+        # --- Save to SVG if requested ---
+        if save_svg:
+            project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', '..'))
+            output_path = os.path.join(project_root, 'outputs', self.eq.name)
+            os.makedirs(output_path, exist_ok=True)
+            file_path = os.path.join(output_path, "signal_treatment.svg")
+            plt.savefig(file_path, format="svg")
+        
+
+
         plt.show()

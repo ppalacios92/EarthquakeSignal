@@ -162,20 +162,20 @@ class EarthquakeSignal:
     def print_summary(self):
         self.summary_tool.print_summary()
 
-    def plot_original_signals(self):
-        self.plotter_tool.plot_original_signals()
+    def plot_original_signals(self, save_svg=True):
+        self.plotter_tool.plot_original_signals(save_svg=save_svg)
 
-    def plot_corrected_signals(self):
-        self.comparison_tool.plot_corrected_signals()
+    def plot_corrected_signals(self, save_svg=True):
+        self.comparison_tool.plot_corrected_signals(save_svg=save_svg)
 
-    def plot_arias_signals(self):
-        self.arias_plotter.plot_arias()
+    def plot_arias_signals(self, save_svg=True):
+        self.arias_plotter.plot_arias(save_svg=save_svg)
 
-    def plot_fourier_signals(self):
-        self.fourier_plotter.plot_spectrum()
+    def plot_fourier_signals(self, save_svg=True):
+        self.fourier_plotter.plot_spectrum(save_svg=save_svg)
 
-    def plot_newmark_spectra(self):
-        self.newmark_plotter.plot_newmark_spectra()
+    def plot_newmark_spectra(self, save_svg=True):
+        self.newmark_plotter.plot_newmark_spectra(save_svg=save_svg)
 
-    def plot_rotd(self):
-        self.rotd_plotter.plot_rotd()
+    def plot_rotd(self, save_svg=True):
+        self.rotd_plotter.plot_rotd(save_svg=save_svg)

@@ -116,6 +116,7 @@ class EarthquakeBatchProcessor:
 
             # Procesar con EarthquakeSignal
             eq = EarthquakeSignal(temp_dir, self.config)
+            eq.name = group_id
             eq.load_and_process()
             self.earthquakes[group_id] = eq
 

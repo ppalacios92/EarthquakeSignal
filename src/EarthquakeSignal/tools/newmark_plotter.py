@@ -13,6 +13,7 @@ __author__ = "Ing. Patricio Palacios B., M.Sc."
 __version__ = "1.0.1"
 
 import matplotlib.pyplot as plt
+import os
 
 class NewmarkPlotter:
     """
@@ -30,7 +31,7 @@ class NewmarkPlotter:
         """
         self.eq = eq
 
-    def plot_newmark_spectra(self):
+    def plot_newmark_spectra(self, save_svg=False):
         """
         Plot pseudo-acceleration (PSa), pseudo-velocity (PSv), and displacement (Sd) spectra
         in a single row with three columns. Each subplot includes the three components
@@ -86,4 +87,16 @@ class NewmarkPlotter:
         axs[2].grid(True)
 
         fig.suptitle(f'Newmark Response Spectra - {self.eq.name}', fontsize=11, fontweight='bold')
+
+        project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', '..'))
+        output_path = os.path.join(project_root, 'outputs', self.eq.name)
+        # --- Save to SVG if requested ---
+        if save_svg:
+            project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', '..'))
+            output_path = os.path.join(project_root, 'outputs', self.eq.name)
+            os.makedirs(output_path, exist_ok=True)
+            file_path = os.path.join(output_path, "newmark_response_spectra.svg")
+            plt.savefig(file_path, format="svg")
+        
+
         plt.show()

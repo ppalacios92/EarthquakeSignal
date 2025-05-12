@@ -9,10 +9,11 @@ Date:
 """
 
 __author__ = "Ing. Patricio Palacios B., M.Sc."
-__version__ = "1.0.0"
+__version__ = "1.1.0"
 
 import matplotlib.pyplot as plt
 import numpy as np
+import os
 
 class AriasPlotter:
     """
@@ -30,10 +31,15 @@ class AriasPlotter:
         """
         self.eq = eq
 
-    def plot_arias(self):
+    def plot_arias(self, save_svg=False):
         """
         Plot Arias intensity (normalized) and acceleration signal for each component
         (H1, H2, V) including the significant duration region (5%–95%).
+
+        Parameters
+        ----------
+        save_svg : bool
+            If True, saves the figure as an SVG in the outputs/<eq.name>/ folder.
         """
         components = ['H1', 'H2', 'V']
         fig, axs = plt.subplots(3, 2, figsize=(15, 10), sharex='col')
@@ -86,5 +92,15 @@ class AriasPlotter:
             axs[i, 1].legend(loc='upper right', fontsize=7)
             axs[i, 1].set_xlim(left=0)
             axs[i, 1].grid(True)
-            
+
+        project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', '..'))
+        output_path = os.path.join(project_root, 'outputs', self.eq.name)
+        # --- Save to SVG if requested ---
+        if save_svg:
+            project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', '..'))
+            output_path = os.path.join(project_root, 'outputs', self.eq.name)
+            os.makedirs(output_path, exist_ok=True)
+            file_path = os.path.join(output_path, "arias_intensity.svg")
+            plt.savefig(file_path, format="svg")
+        
         plt.show()

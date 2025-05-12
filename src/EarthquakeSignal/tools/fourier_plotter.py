@@ -13,6 +13,7 @@ __version__ = "1.0.0"
 import numpy as np
 import matplotlib.pyplot as plt
 from EarthquakeSignal.core.fourier_analyzer import FourierAnalyzer
+import os
 
 class FourierPlotter:
     """
@@ -28,7 +29,7 @@ class FourierPlotter:
         """
         self.eq = eq
 
-    def plot_spectrum(self, num_frequencies=4):
+    def plot_spectrum(self, num_frequencies=4 , save_svg=False):
         """
         Plot the FFT spectrum for all components (H1, H2, V) with dominant frequencies highlighted.
 
@@ -74,4 +75,16 @@ class FourierPlotter:
 
             axs[i].set_ylabel('Power Amplitude', fontsize=9)
         fig.suptitle(f"FFT Spectrum with Dominant Frequencies - {self.eq.name}", fontsize=11, fontweight='bold')
+
+        project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', '..'))
+        output_path = os.path.join(project_root, 'outputs', self.eq.name)
+        # --- Save to SVG if requested ---
+        if save_svg:
+            project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', '..'))
+            output_path = os.path.join(project_root, 'outputs', self.eq.name)
+            os.makedirs(output_path, exist_ok=True)
+            file_path = os.path.join(output_path, "fft_spectrum.svg")
+            plt.savefig(file_path, format="svg")
+        
+
         plt.show()

@@ -12,6 +12,7 @@ __author__ = "Ing. Patricio Palacios B., M.Sc."
 __version__ = "1.0.0"
 
 import numpy as np
+import os
 
 class EarthquakeSummary:
     """

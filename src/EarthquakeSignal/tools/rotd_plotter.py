@@ -1,5 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
+import os
 
 class RotDPlotter:
     """
@@ -16,7 +17,7 @@ class RotDPlotter:
         """
         self.eq = eq
 
-    def plot_rotd(self):
+    def plot_rotd(self, save_svg=False):
         """
         Plot the acceleration orbit (H1 vs H2) and overlay RotD00, RotD50, and RotD100 angles.
         Also plot the response spectra in an adjacent subplot with all annotations and legend.
@@ -83,5 +84,17 @@ class RotDPlotter:
         axs[1].set_title('Acceleration Orbit', fontsize=10, fontweight='bold')
         axs[1].legend(fontsize=7)
         axs[1].grid(True)
+
+        project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', '..'))
+        output_path = os.path.join(project_root, 'outputs', self.eq.name)
+        # --- Save to SVG if requested ---
+        if save_svg:
+            project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', '..'))
+            output_path = os.path.join(project_root, 'outputs', self.eq.name)
+            os.makedirs(output_path, exist_ok=True)
+            file_path = os.path.join(output_path, "rotd.svg")
+            plt.savefig(file_path, format="svg")
+        
+
 
         plt.show()
