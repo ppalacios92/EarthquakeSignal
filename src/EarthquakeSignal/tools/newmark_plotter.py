@@ -44,10 +44,7 @@ class NewmarkPlotter:
         fig, axs = plt.subplots(1, 3, figsize=(15, 3.5), sharex=True)
 
         for comp in components:
-            try:
-                data = self.eq.newmark_spectra[comp]
-            except KeyError:
-                continue
+            data = self.eq.newmark_spectra.get(comp, None)
 
             T = data['T']
             axs[0].plot(T, data['PSa'], linestyle='--', color=[0.6, 0.6, 0.6], linewidth=1)

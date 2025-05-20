@@ -44,6 +44,7 @@ class AriasIntensityAnalyzer:
             Destructiveness potential as defined by energy over zero-crossing frequency squared.
         """
         g = 9.81
+        signal=signal*9.81
         t = np.arange(len(signal)) * dt
 
         # Arias intensity curve (non-normalized)

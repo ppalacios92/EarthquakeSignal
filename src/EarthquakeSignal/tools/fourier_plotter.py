@@ -42,10 +42,18 @@ class FourierPlotter:
         fig, axs = plt.subplots(3, 1, figsize=(15, 9), sharey=True)
 
         for i, comp in enumerate(components):
-            signal = self.eq.signals[comp]
-            dt = self.eq.dt
+            if comp not in self.eq.fourier:
+                print(f"[WARNING] No Fourier data found for component '{comp}', skipping.")
+                continue
 
-            freqs, Pyy, dom_freqs, dom_periods, dom_peaks = FourierAnalyzer.compute(signal, dt, num_frequencies)
+            data = self.eq.fourier[comp]
+
+            freqs = data['frequencies']
+            Pyy = data['spectrum']
+            dom_freqs = data['dominant_freqs'][:num_frequencies]
+            dom_periods = data['dominant_periods'][:num_frequencies]
+            dom_peaks = data['dominant_peaks'][:num_frequencies]
+            
 
             axs[i].semilogx(freqs, Pyy, linewidth=1.2, color='black')
             axs[i].scatter(dom_freqs, dom_peaks, color='blue', s=30, zorder=5)

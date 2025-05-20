@@ -50,10 +50,10 @@ class NewmarkSpectrumAnalyzer:
                 'at'  : np.ndarray, Absolute acceleration time history [m/s²]
         """
         gama = 1 / 2
-        beta = 1 / 6
+        beta = 1 / 4
 
         # Periods
-        T = np.arange(0.00, 5.01, 0.1)
+        T = np.arange(0.00, 5.01, 0.01) 
 
         # Convert acceleration to m/s² if needed
         ag = np.asarray(ag) * 9.81  # Assuming input is in g

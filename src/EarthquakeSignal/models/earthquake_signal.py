@@ -20,14 +20,17 @@ from EarthquakeSignal.core.base_line import BaselineCorrection
 from EarthquakeSignal.core.arias_intensity import AriasIntensityAnalyzer
 from EarthquakeSignal.core.fourier_analyzer import FourierAnalyzer
 from EarthquakeSignal.core.newmark_spectrum_analyzer import NewmarkSpectrumAnalyzer
+from EarthquakeSignal.core.rotd_analyzer import RotDSpectrumAnalyzer
+
 from EarthquakeSignal.tools.earthquake_summary import EarthquakeSummary
 from EarthquakeSignal.tools.earthquake_plotter import EarthquakePlotter
 from EarthquakeSignal.tools.earthquake_comparison_plotter import EarthquakeComparisonPlotter
 from EarthquakeSignal.tools.arias_plotter import AriasPlotter
 from EarthquakeSignal.tools.fourier_plotter import FourierPlotter
 from EarthquakeSignal.tools.newmark_plotter import NewmarkPlotter
-from EarthquakeSignal.core.rotd_analyzer import RotDSpectrumAnalyzer
 from EarthquakeSignal.tools.rotd_plotter import RotDPlotter
+
+from EarthquakeSignal.tools.export_writer import ExportWriter
 
 class EarthquakeSignal:
     """
@@ -57,7 +60,7 @@ class EarthquakeSignal:
         self.fourier_plotter = FourierPlotter(self)
         self.newmark_plotter = NewmarkPlotter(self)
         self.rotd_plotter = RotDPlotter(self)
-
+        self.exporter = ExportWriter(self)
 
     def load_and_process(self):
         self._load_signal()
@@ -73,8 +76,6 @@ class EarthquakeSignal:
             self._compute_newmark_spectra()
         if self.config.get('compute_rotd', False):
             self._compute_rotd()
-
-
         if self.config.get('print_summary', False):
             self.print_summary()
         if self.config.get('plot_signals', False):
@@ -89,6 +90,8 @@ class EarthquakeSignal:
             self.plot_newmark_spectra()
         if self.config.get('plot_rotd', False):
             self.plot_rotd()
+        if self.config.get('writer', False):
+            self.export()
 
     def _load_signal(self):
         loader = SignalLoader(self.filepath, self.config['file_extension'])
@@ -133,22 +136,24 @@ class EarthquakeSignal:
     def _compute_newmark_spectra(self):
         self.newmark_spectra = {}
         for comp, acc in self.signals.items():
-            spec = NewmarkSpectrumAnalyzer.compute(acc, self.dt)
+            spec = None
             spec_corr = NewmarkSpectrumAnalyzer.compute(self.corrected_acc[comp], self.dt)
-
             self.newmark_spectra[comp] = {
-                'T': spec['T'],
-                'Sa': spec['Sa'],
-                'Sv': spec['Sv'],
-                'Sd': spec['Sd'],
-                'PSa': spec['PSa'],
-                'PSv': spec['PSv'],
+                'T': spec['T'] if spec else spec_corr['T'],
+                'Sa': spec['Sa'] if spec else spec_corr['Sa'],
+                'Sv': spec['Sv'] if spec else spec_corr['Sv'],
+                'Sd': spec['Sd'] if spec else spec_corr['Sd'],
+                'PSa': spec['PSa'] if spec else spec_corr['PSa'],
+                'PSv': spec['PSv'] if spec else spec_corr['PSv'],
                 'Sa_corr': spec_corr['Sa'],
                 'Sv_corr': spec_corr['Sv'],
                 'Sd_corr': spec_corr['Sd'],
                 'PSa_corr': spec_corr['PSa'],
                 'PSv_corr': spec_corr['PSv'],
-                'u': spec['u'], 'v': spec['v'], 'a': spec['a'], 'at': spec['at'],
+                'u': spec['u'] if spec else spec_corr['u'],
+                'v': spec['v'] if spec else spec_corr['v'],
+                'a': spec['a'] if spec else spec_corr['a'],
+                'at': spec['at'] if spec else spec_corr['at'],
                 'u_corr': spec_corr['u'], 'v_corr': spec_corr['v'],
                 'a_corr': spec_corr['a'], 'at_corr': spec_corr['at']
             }
@@ -157,7 +162,6 @@ class EarthquakeSignal:
         h1 = self.corrected_acc['H1']
         h2 = self.corrected_acc['H2']
         self.rotd = RotDSpectrumAnalyzer.compute_rotd(h1, h2, self.dt)
-
 
     def print_summary(self):
         self.summary_tool.print_summary()
@@ -179,3 +183,6 @@ class EarthquakeSignal:
 
     def plot_rotd(self, save_svg=True):
         self.rotd_plotter.plot_rotd(save_svg=save_svg)
+
+    def export(self, uncorrected=True, corrected=False, newmark_corrected=False):
+        self.exporter.export( uncorrected=uncorrected, corrected=corrected, newmark_corrected=newmark_corrected  )
