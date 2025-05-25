@@ -57,11 +57,11 @@ class ExportWriter:
         )
         os.makedirs(self.output_path, exist_ok=True)
 
-        self.component_map = {'H1': 'N', 'H2': 'E', 'V': 'V'}
+        self.component_map = {'H1': 'N', 'H2': 'E', 'V': 'Z'}
 
 
         if uncorrected:
-            self._export_time_series(self.eq.signals, suffix='_acc')
+            self._export_time_series(self.eq.signals, suffix='')
 
         if corrected:
             if not self.eq.corrected_acc:

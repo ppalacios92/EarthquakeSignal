@@ -48,7 +48,7 @@ class NewmarkPlotter:
 
             T = data['T']
             axs[0].plot(T, data['PSa'], linestyle='--', color=[0.6, 0.6, 0.6], linewidth=1)
-            axs[0].plot(T, data['PSa_corr'], color=colors[comp], linewidth=1.2, label=comp)
+            axs[0].plot(T, data['PSa_corr'], color=colors[comp], linewidth=1.2, label=f"{comp} (PGA={data['PSa_corr'][0]:.3f}g)")
 
             axs[1].plot(T, data['PSv'], linestyle='--', color=[0.6, 0.6, 0.6], linewidth=1)
             axs[1].plot(T, data['PSv_corr'], color=colors[comp], linewidth=1.2, label=comp)

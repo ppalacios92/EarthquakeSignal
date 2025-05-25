@@ -12,7 +12,7 @@ Date:
 """
 
 __author__ = "Ing. Patricio Palacios B., M.Sc."
-__version__ = "1.2.0"
+__version__ = "1.2.1"
 
 import numpy as np
 import os
@@ -39,7 +39,7 @@ class SignalComponentIdentifier:
             Dictionary with keys 'H1', 'H2', 'V' and signal arrays as values.
 
         names : dict
-            Dictionary mapping 'H1', 'H2', 'V' to the original filename keys.
+            Dictionary mapping 'H1', 'H2', 'V' to the original filename keys (without extension).
 
         Raises
         ------
@@ -62,30 +62,28 @@ class SignalComponentIdentifier:
                     if label in identified:
                         raise ValueError(f"Duplicate component label detected for {label}")
                     identified[label] = signals[key]
-                    names[label] = key
+                    names[label] = basename  # <- remove extension
                     break  # exit suffix loop once matched
 
         # --- Fallback to RMS-based identification if incomplete ---
         if len(identified) < 3:
-            # Collect remaining signals
             remaining = {
                 name: signal for name, signal in signals.items()
-                if name not in names.values()
+                if os.path.splitext(os.path.basename(name))[0] not in names.values()
             }
 
-            # Compute RMS for remaining signals
             rms_values = {
                 name: np.sqrt(np.mean(signal**2))
                 for name, signal in remaining.items()
             }
 
-            # Sort remaining by RMS: lowest → vertical (V), others → H1 and H2
             sorted_rms = sorted(rms_values.items(), key=lambda x: x[1])
             fallback_labels = [lbl for lbl in ['V', 'H1', 'H2'] if lbl not in identified]
 
             for (fname, _), label in zip(sorted_rms, fallback_labels):
                 identified[label] = signals[fname]
-                names[label] = fname
+                basename = os.path.splitext(os.path.basename(fname))[0]
+                names[label] = basename  # <- again, without extension
 
         # --- Final validation ---
         if set(identified.keys()) != {'H1', 'H2', 'V'}:
