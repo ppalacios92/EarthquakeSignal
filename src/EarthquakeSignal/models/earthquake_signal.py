@@ -94,15 +94,18 @@ class EarthquakeSignal:
             self.export()
 
     def _load_signal(self):
+        print('-- start load_signal-->Done!')
         loader = SignalLoader(self.filepath, self.config['file_extension'])
         self.dt, self.signals_raw = loader.read()
         unit_factor = self.config['unit_factor']
         self.signals_raw = {k: v / unit_factor for k, v in self.signals_raw.items()}
 
     def _identify_components(self):
+        print('-- start identify components-->Done!')
         self.signals, self.component_names = SignalComponentIdentifier.identify(self.signals_raw)
 
     def _apply_baseline_correction(self):
+        print('-- start apply base line-->Done!')
         for comp, signal in self.signals.items():
             acc_corr, vel_corr, disp_corr = BaselineCorrection.apply(signal, self.dt)
             self.corrected_acc[comp] = acc_corr
@@ -110,6 +113,7 @@ class EarthquakeSignal:
             self.corrected_disp[comp] = disp_corr
 
     def _compute_arias_intensity(self):
+        print('-- start compute arias intensity-->Done!')
         self.arias = {}
         for comp, signal in self.signals.items():
             IA, t0, t1, ia_total, pot_dest = AriasIntensityAnalyzer.compute(signal, self.dt)
@@ -122,6 +126,7 @@ class EarthquakeSignal:
             }
 
     def _compute_fourier_analysis(self):
+        print('-- start compute fourier analysis-->Done!')
         self.fourier = {}
         for comp, signal in self.signals.items():
             f, Pyy, dom_freqs, dom_periods, dom_peaks = FourierAnalyzer.compute(signal, self.dt)
@@ -134,6 +139,7 @@ class EarthquakeSignal:
             }
 
     def _compute_newmark_spectra(self):
+        print('-- start compute newmark spectra->OK')
         self.newmark_spectra = {}
         for comp, acc in self.signals.items():
             spec = None
@@ -159,6 +165,7 @@ class EarthquakeSignal:
             }
 
     def _compute_rotd(self):
+        print('-- start compute rotd-->Done!')
         h1 = self.corrected_acc['H1']
         h2 = self.corrected_acc['H2']
         self.rotd = RotDSpectrumAnalyzer.compute_rotd(h1, h2, self.dt)

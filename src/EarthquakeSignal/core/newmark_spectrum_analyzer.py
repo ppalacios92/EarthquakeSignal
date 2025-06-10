@@ -5,14 +5,50 @@ Description:
     subject to a ground acceleration record. The output includes spectral quantities and time histories.
 
 Date:
-    2025-05-01
+    2025-06-10
 """
 
 __author__ = "Ing. Patricio Palacios B., M.Sc."
-__version__ = "1.0.1"
+__version__ = "1.1.0"
 
 import numpy as np
 from scipy.integrate import cumtrapz
+from numba import njit
+
+
+@njit
+def solve_newmark(ag, dt, zeta, Tj):
+    gama = 1/2
+    beta = 1/4
+    w = 2 * np.pi / Tj
+    m = 1.0
+    k = m * w**2
+    c = 2 * m * w * zeta
+    a1 = m / (beta * dt ** 2) + c * gama / (beta * dt)
+    a2 = m / (beta * dt) + c * (gama / beta - 1)
+    a3 = m * (1 / (2 * beta) - 1) + c * dt * (gama / (2 * beta) - 1)
+    kp = k + a1
+
+    u = np.zeros(len(ag))
+    v = np.zeros(len(ag))
+    a = np.zeros(len(ag))
+    at = np.zeros(len(ag))
+
+    for i in range(len(ag) - 1):
+        p_eff = -m * ag[i] + a1 * u[i] + a2 * v[i] + a3 * a[i]
+        u[i + 1] = p_eff / kp
+        a[i + 1] = (u[i + 1] - u[i]) / (beta * dt ** 2) - v[i] / (beta * dt) - a[i] * (1 / (2 * beta) - 1)
+        at[i + 1] = a[i + 1] + ag[i]
+        v[i + 1] = v[i] + dt * ((1 - gama) * a[i] + gama * a[i + 1])
+
+    Sd = np.max(np.abs(u))
+    Sv = np.max(np.abs(v))
+    Sa = np.max(np.abs(at))
+    PSv = w * Sd
+    PSa = w ** 2 * Sd
+
+    return Sd, Sv, Sa, PSv, PSa, u, v, a, at
+
 
 class NewmarkSpectrumAnalyzer:
     """
@@ -28,7 +64,7 @@ class NewmarkSpectrumAnalyzer:
         Parameters
         ----------
         ag : np.ndarray
-            Ground acceleration array [m/s²].
+            Ground acceleration array [g].
         dt : float
             Time step [s].
         zeta : float
@@ -49,63 +85,26 @@ class NewmarkSpectrumAnalyzer:
                 'a'   : np.ndarray, Relative acceleration time history [m/s²]
                 'at'  : np.ndarray, Absolute acceleration time history [m/s²]
         """
-        gama = 1 / 2
-        beta = 1 / 4
+        T = np.arange(0.01, 5.01, 0.01)
+        ag = np.asarray(ag) * 9.81  # convert from g to m/s²
 
-        # Periods
-        T = np.arange(0.00, 5.01, 0.01) 
-
-        # Convert acceleration to m/s² if needed
-        ag = np.asarray(ag) * 9.81  # Assuming input is in g
-
-        # Ground velocity and displacement (for completeness, not used in solver)
-        vg = cumtrapz(ag, dx=dt, initial=0)
-        ug = cumtrapz(vg, dx=dt, initial=0)
-
-        # Initialize response spectra
         Sd, Sv, Sa, PSv, PSa = [], [], [], [], []
-
-        # Initialize placeholders for one set of time histories
         u_hist, v_hist, a_hist, at_hist = [], [], [], []
 
-        # Stability limit
+        # Estabilidad mínima
+        gama = 1/2
+        beta = 1/4
         q = dt * np.pi * np.sqrt(2) * np.sqrt(gama - 2 * beta)
 
         for Tj in T:
             if Tj > q:
-                w = 2 * np.pi / Tj
-                m = 1.0
-                k = m * w ** 2
-                c = 2 * m * w * zeta
+                Sd_, Sv_, Sa_, PSv_, PSa_, u, v, a, at = solve_newmark(ag, dt, zeta, Tj)
+                Sd.append(Sd_)
+                Sv.append(Sv_)
+                Sa.append(Sa_)
+                PSv.append(PSv_)
+                PSa.append(PSa_)
 
-                # Newmark coefficients
-                a1 = m / (beta * dt ** 2) + c * gama / (beta * dt)
-                a2 = m / (beta * dt) + c * (gama / beta - 1)
-                a3 = m * (1 / (2 * beta) - 1) + c * dt * (gama / (2 * beta) - 1)
-                kp = k + a1
-
-                # Initialize time histories
-                u = np.zeros_like(ag)
-                v = np.zeros_like(ag)
-                a = np.zeros_like(ag)
-                at = np.zeros_like(ag)
-
-                # Newmark iteration
-                for i in range(len(ag) - 1):
-                    p_eff = -m * ag[i] + a1 * u[i] + a2 * v[i] + a3 * a[i]
-                    u[i + 1] = p_eff / kp
-                    a[i + 1] = (u[i + 1] - u[i]) / (beta * dt ** 2) - v[i] / (beta * dt) - a[i] * (1 / (2 * beta) - 1)
-                    at[i + 1] = a[i + 1] + ag[i]  # Absolute acceleration
-                    v[i + 1] = v[i] + dt * ((1 - gama) * a[i] + gama * a[i + 1])
-
-                # Store max values
-                Sd.append(np.max(np.abs(u)))
-                Sv.append(np.max(np.abs(v)))
-                Sa.append(np.max(np.abs(at)))
-                PSv.append(w * Sd[-1])
-                PSa.append(w ** 2 * Sd[-1])
-
-                # Save one example time history (for T ≈ 1.0 s)
                 if np.isclose(Tj, 1.0, atol=0.01):
                     u_hist = u
                     v_hist = v
@@ -119,16 +118,12 @@ class NewmarkSpectrumAnalyzer:
                 PSv.append(0)
                 PSa.append(PGA)
 
-        # Convert lists to arrays
+        # Convertir a arrays
         Sd = np.array(Sd)
         Sv = np.array(Sv)
-        Sa = np.array(Sa)
+        Sa = np.array(Sa) / 9.81
         PSv = np.array(PSv)
-        PSa = np.array(PSa)
-
-        # Convert output to [g] when needed
-        PSa /= 9.81
-        Sa /= 9.81
+        PSa = np.array(PSa) / 9.81
         a_hist = np.array(a_hist) / 9.81
         at_hist = np.array(at_hist) / 9.81
 
@@ -136,8 +131,8 @@ class NewmarkSpectrumAnalyzer:
             'T': T,
             'PSa': PSa,
             'PSv': PSv,
-            'Sd': np.array(Sd),
-            'Sv': np.array(Sv),
+            'Sd': Sd,
+            'Sv': Sv,
             'Sa': Sa,
             'u': np.array(u_hist),
             'v': np.array(v_hist),
