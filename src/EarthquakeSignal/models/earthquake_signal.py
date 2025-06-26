@@ -6,11 +6,11 @@ Description:
     operations such as baseline correction, Arias intensity computation, and frequency spectrum analysis.
 
 Date:
-    2025-05-01
+    2025-06-10
 """
 
 __author__ = "Ing. Patricio Palacios B., M.Sc."
-__version__ = "1.0.0"
+__version__ = "1.1.0"
 
 import os
 import re
@@ -31,6 +31,7 @@ from EarthquakeSignal.tools.newmark_plotter import NewmarkPlotter
 from EarthquakeSignal.tools.rotd_plotter import RotDPlotter
 
 from EarthquakeSignal.tools.export_writer import ExportWriter
+
 
 class EarthquakeSignal:
     """
@@ -67,7 +68,7 @@ class EarthquakeSignal:
         self._identify_components()
 
         if self.config.get('apply_baseline_correction', False):
-            self._apply_baseline_correction()
+            self._apply_baseline_correction_frecuency_filter()
         if self.config.get('apply_arias_analysis', False):
             self._compute_arias_intensity()
         if self.config.get('apply_fourier_analysis', False):
@@ -102,15 +103,18 @@ class EarthquakeSignal:
 
     def _identify_components(self):
         print('-- start identify components-->Done!')
-        self.signals, self.component_names = SignalComponentIdentifier.identify(self.signals_raw)
+        self.signals, self.component_names = SignalComponentIdentifier.identify(self.signals_raw, config=self.config)
 
-    def _apply_baseline_correction(self):
-        print('-- start apply base line-->Done!')
+    def _apply_baseline_correction_frecuency_filter(self):
+        print('-- start apply base line & Frecuency Filters-->Done!')
         for comp, signal in self.signals.items():
-            acc_corr, vel_corr, disp_corr = BaselineCorrection.apply(signal, self.dt)
+            filtered_signal = BaselineCorrection.bandpass_filter(signal, self.dt , flc = 0.1, fhc = 25.0, order= 4)
+            acc_corr, vel_corr, disp_corr = BaselineCorrection.apply(filtered_signal, self.dt)
+
+            # acc_corr, vel_corr, disp_corr = BaselineCorrection.apply(signal, self.dt)
             self.corrected_acc[comp] = acc_corr
             self.corrected_vel[comp] = vel_corr
-            self.corrected_disp[comp] = disp_corr
+            self.corrected_disp[comp] = disp_corr       
 
     def _compute_arias_intensity(self):
         print('-- start compute arias intensity-->Done!')
@@ -142,7 +146,8 @@ class EarthquakeSignal:
         print('-- start compute newmark spectra->OK')
         self.newmark_spectra = {}
         for comp, acc in self.signals.items():
-            spec = None
+            # spec = None
+            spec= NewmarkSpectrumAnalyzer.compute(self.signals[comp], self.dt)
             spec_corr = NewmarkSpectrumAnalyzer.compute(self.corrected_acc[comp], self.dt)
             self.newmark_spectra[comp] = {
                 'T': spec['T'] if spec else spec_corr['T'],
@@ -191,5 +196,9 @@ class EarthquakeSignal:
     def plot_rotd(self, save_svg=True):
         self.rotd_plotter.plot_rotd(save_svg=save_svg)
 
-    def export(self, uncorrected=True, corrected=False, newmark_corrected=False):
-        self.exporter.export( uncorrected=uncorrected, corrected=corrected, newmark_corrected=newmark_corrected  )
+    def export(self, uncorrected=True, corrected=True, newmark_corrected=True):
+        self.exporter.export(
+            uncorrected=uncorrected,
+            corrected=corrected,
+            newmark_corrected=newmark_corrected
+        )

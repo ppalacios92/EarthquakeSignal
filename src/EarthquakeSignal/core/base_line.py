@@ -3,16 +3,18 @@ Description:
     This module defines the BaselineCorrection class, which provides static methods
     for removing baseline drift from seismic acceleration signals. It applies
     integration-based velocity and displacement calculations with a polynomial
-    correction model for acceleration drift removal.
+    correction model for acceleration drift removal. Additionally, it provides a
+    bandpass Butterworth filter for frequency-domain signal conditioning.
 
 Date:
     2025-05-01
 """
 
 __author__ = "Ing. Patricio Palacios B., M.Sc."
-__version__ = "1.0.2"
+__version__ = "1.1.0"
 
 import numpy as np
+from scipy.signal import butter, filtfilt
 
 class BaselineCorrection:
     @staticmethod
@@ -85,3 +87,33 @@ class BaselineCorrection:
         ai_corr = ai_corr / 9.81
 
         return ai_corr, vi_corr, di_corr
+
+    @staticmethod
+    def bandpass_filter(signal: np.ndarray, dt: float, flc: float = 0.1, fhc: float = 25.0, order: int = 4):
+        """
+        Apply a Butterworth bandpass filter to a signal.
+
+        Parameters
+        ----------
+        signal : np.ndarray
+            Input signal (e.g., acceleration) in [g].
+        dt : float
+            Time step (sampling interval) in [s].
+        flc : float
+            Low cutoff frequency in Hz.
+        fhc : float
+            High cutoff frequency in Hz.
+        order : int
+            Order of the Butterworth filter.
+
+        Returns
+        -------
+        filtered : np.ndarray
+            Filtered signal in [g].
+        """
+        fs = 1.0 / dt
+        fn = fs / 2.0
+        wn = [flc / fn, fhc / fn]
+        b, a = butter(order, wn, btype='band')
+        filtered = filtfilt(b, a, signal)
+        return filtered
