@@ -12,7 +12,9 @@ __author__ = "Ing. Patricio Palacios B., M.Sc."
 __version__ = "1.1.0"
 
 import numpy as np
-from scipy.integrate import cumtrapz
+# from scipy.integrate import cumtrapz
+from scipy.integrate import cumulative_trapezoid
+
 from numba import njit
 
 
