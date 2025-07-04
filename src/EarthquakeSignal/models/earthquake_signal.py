@@ -108,7 +108,7 @@ class EarthquakeSignal:
     def _apply_baseline_correction_frecuency_filter(self):
         print('-- start apply base line & Frecuency Filters-->Done!')
         for comp, signal in self.signals.items():
-            filtered_signal = BaselineCorrection.bandpass_filter(signal, self.dt , flc = 0.1, fhc = 25.0, order= 4)
+            filtered_signal = BaselineCorrection.bandpass_filter(signal, self.dt , flc = 0.1, fhc = 24.9, order= 4)
             acc_corr, vel_corr, disp_corr = BaselineCorrection.apply(filtered_signal, self.dt)
 
             # acc_corr, vel_corr, disp_corr = BaselineCorrection.apply(signal, self.dt)
