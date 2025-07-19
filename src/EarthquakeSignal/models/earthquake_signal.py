@@ -119,7 +119,7 @@ class EarthquakeSignal:
     def _compute_arias_intensity(self):
         print('-- start compute arias intensity-->Done!')
         self.arias = {}
-        for comp, signal in self.signals.items():
+        for comp, signal in self.corrected_acc.items():
             IA, t0, t1, ia_total, pot_dest = AriasIntensityAnalyzer.compute(signal, self.dt)
             self.arias[comp] = {
                 'IA_percent': IA,
@@ -132,7 +132,7 @@ class EarthquakeSignal:
     def _compute_fourier_analysis(self):
         print('-- start compute fourier analysis-->Done!')
         self.fourier = {}
-        for comp, signal in self.signals.items():
+        for comp, signal in self.corrected_acc.items():
             f, Pyy, dom_freqs, dom_periods, dom_peaks = FourierAnalyzer.compute(signal, self.dt)
             self.fourier[comp] = {
                 'frequencies': f,

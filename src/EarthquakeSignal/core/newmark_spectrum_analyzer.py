@@ -59,7 +59,7 @@ class NewmarkSpectrumAnalyzer:
     """
 
     @staticmethod
-    def compute(ag, dt, zeta=0.05):
+    def compute(ag, dt, zeta=0.05 , max_period=5.01 , intervals=0.01):
         """
         Compute the response spectrum using the β-Newmark method.
 
@@ -87,7 +87,7 @@ class NewmarkSpectrumAnalyzer:
                 'a'   : np.ndarray, Relative acceleration time history [m/s²]
                 'at'  : np.ndarray, Absolute acceleration time history [m/s²]
         """
-        T = np.arange(0.01, 5.01, 0.01)
+        T = np.arange(0.0, max_period, intervals)
         ag = np.asarray(ag) * 9.81  # convert from g to m/s²
 
         Sd, Sv, Sa, PSv, PSa = [], [], [], [], []

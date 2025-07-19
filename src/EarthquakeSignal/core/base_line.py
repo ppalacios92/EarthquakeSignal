@@ -15,6 +15,7 @@ __version__ = "1.1.0"
 
 import numpy as np
 from scipy.signal import butter, filtfilt
+import warnings
 
 class BaselineCorrection:
     @staticmethod
@@ -89,6 +90,7 @@ class BaselineCorrection:
         return ai_corr, vi_corr, di_corr
 
     @staticmethod
+    
     def bandpass_filter(signal: np.ndarray, dt: float, flc: float = 0.1, fhc: float = 25.0, order: int = 4):
         """
         Apply a Butterworth bandpass filter to a signal.
@@ -113,6 +115,13 @@ class BaselineCorrection:
         """
         fs = 1.0 / dt
         fn = fs / 2.0
+        if flc <= 0:
+            flc = 0.01
+            warnings.warn("Low cutoff frequency too small; adjusted to 0.01 Hz")
+        if fhc >= fn:
+            fhc = 0.99 * fn
+            warnings.warn(f"High cutoff frequency {fhc:.2f} Hz exceeds Nyquist ({fn:.2f} Hz); adjusted to {fhc:.2f} Hz")
+
         wn = [flc / fn, fhc / fn]
         b, a = butter(order, wn, btype='band')
         filtered = filtfilt(b, a, signal)
