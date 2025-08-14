@@ -114,5 +114,4 @@ If you use this tool in your work, please cite it as follows:
 
 ## 📄 Citation in APA (7th Edition)
 
-Palacios B., P. (2025). *EtabsToPython: A Python-based ETABS data extraction and visualization tool* [Computer software]. GitHub. https://github.com/ppalacios92/EtabsToPython
-
+Palacios B., P. (2025). EarthquakeSignal: A modular framework for earthquake ground-motion processing [Computer software]. GitHub. https://github.com/ppalacios92/EarthquakeSignal
