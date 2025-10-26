@@ -54,6 +54,9 @@ class RotDSpectrumAnalyzer:
         arith_mean = 0.5 * (H1 + H2)
         am_result = NewmarkSpectrumAnalyzer.compute(arith_mean, dt, damping)
 
+        srss = np.sqrt(H1**2 + H2**2)
+        srss_result = NewmarkSpectrumAnalyzer.compute(srss, dt, damping)
+
         return {
             "T": result["T"],
             "ROTD00": rotd00,
@@ -65,4 +68,5 @@ class RotDSpectrumAnalyzer:
             "PSa_matrix": psa_matrix,
             "PSa_geo_mean": gm_result["PSa"],
             "PSa_arith_mean": am_result["PSa"],
+            "PSa_SRSS": srss_result["PSa"],
         }

@@ -200,5 +200,4 @@ class EarthquakeSignal:
         self.exporter.export(
             uncorrected=uncorrected,
             corrected=corrected,
-            newmark_corrected=newmark_corrected
-        )
+            newmark_corrected=newmark_corrected )

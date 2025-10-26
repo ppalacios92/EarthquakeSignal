@@ -28,29 +28,11 @@ class ExportWriter:
     """
 
     def __init__(self, eq):
-        """
-        Parameters
-        ----------
-        eq : EarthquakeSignal
-            Instance containing time step, signal data, and metadata.
-        """
+
         self.eq = eq
 
 
     def export(self, uncorrected=True, corrected=False, newmark_corrected=False):
-        """
-        Export signals and spectra based on selected flags.
-
-        Parameters
-        ----------
-        uncorrected : bool
-            If True, export raw accelerations.
-        corrected : bool
-            If True, export corrected accelerations.
-        newmark_corrected : bool
-            If True, export corrected Newmark response spectra.
-        """
-
         self.output_path = os.path.join(
             os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', '..')),
             'outputs', self.eq.name
@@ -73,17 +55,12 @@ class ExportWriter:
                 raise ValueError("Newmark spectra data not found.")
             self._export_spectra(self.eq.newmark_spectra, suffix='_spectra_cor')
 
-    def _export_time_series(self, signal_dict, suffix):
-        """
-        Export acceleration time histories to files.
 
-        Parameters
-        ----------
-        signal_dict : dict
-            Dictionary with keys 'H1', 'H2', 'V' and acceleration arrays.
-        suffix : str
-            Suffix for the file name (e.g., '_acc', '_acc_cor').
-        """
+        if self.eq.rotd:
+            self._export_rotd_spectra()
+
+
+    def _export_time_series(self, signal_dict, suffix):
         n = len(next(iter(signal_dict.values())))
         time = np.arange(0, n * self.eq.dt, self.eq.dt)
 
@@ -98,16 +75,7 @@ class ExportWriter:
                     f.write(f"{t:.6f}\t{a:.6e}\n")
 
     def _export_spectra(self, spectra_dict, suffix):
-        """
-        Export Newmark-corrected response spectra to files.
 
-        Parameters
-        ----------
-        spectra_dict : dict
-            Dictionary with keys 'H1', 'H2', 'V' and subfields including 'T' and 'Sa_corr'.
-        suffix : str
-            Suffix for the file name (e.g., '_spectra_cor').
-        """
         for comp, label in self.component_map.items():
             if comp not in spectra_dict:
                 continue
@@ -119,6 +87,30 @@ class ExportWriter:
 
             filename = f"{self.eq.component_names[comp]}_{label}{suffix}.txt"
             filepath = os.path.join(self.output_path, filename)
+            with open(filepath, 'w') as f:
+                for t, sa in zip(T, Sa):
+                    f.write(f"{t:.6f}\t{sa:.6e}\n")
+
+
+    def _export_rotd_spectra(self):
+        """Export RotD spectra to files."""
+        rotd_path = os.path.join(self.output_path, 'rotd_spectra')
+        os.makedirs(rotd_path, exist_ok=True)
+        
+        T = self.eq.rotd['T']
+        
+        spectra_map = {
+            'ROTD00': self.eq.rotd['ROTD00'],
+            'ROTD50': self.eq.rotd['ROTD50'],
+            'ROTD100': self.eq.rotd['ROTD100'],
+            'GeoMean': self.eq.rotd['PSa_geo_mean'],
+            'ArithMean': self.eq.rotd['PSa_arith_mean'],
+            'SRSS': self.eq.rotd['PSa_SRSS']
+        }
+        
+        for name, Sa in spectra_map.items():
+            filename = f"{self.eq.name}_{name}.txt"
+            filepath = os.path.join(rotd_path, filename)
             with open(filepath, 'w') as f:
                 for t, sa in zip(T, Sa):
                     f.write(f"{t:.6f}\t{sa:.6e}\n")
