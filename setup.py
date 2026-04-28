@@ -9,4 +9,8 @@ setup(
     package_dir={"": "src"},
     include_package_data=True,
     python_requires=">=3.7",
+    install_requires=[
+    "tqdm",
+    "joblib",
+],
 )
