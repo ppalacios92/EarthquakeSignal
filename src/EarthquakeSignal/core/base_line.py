@@ -14,7 +14,7 @@ __author__ = "Ing. Patricio Palacios B., M.Sc."
 __version__ = "1.1.0"
 
 import numpy as np
-from scipy.signal import butter, filtfilt
+from scipy.signal import butter, sosfiltfilt
 import warnings
 
 class BaselineCorrection:
@@ -119,10 +119,12 @@ class BaselineCorrection:
             flc = 0.01
             warnings.warn("Low cutoff frequency too small; adjusted to 0.01 Hz")
         if fhc >= fn:
+            warnings.warn(f"High cutoff frequency {fhc:.2f} Hz exceeds Nyquist ({fn:.2f} Hz); adjusted to {0.99 * fn:.2f} Hz")
             fhc = 0.99 * fn
-            warnings.warn(f"High cutoff frequency {fhc:.2f} Hz exceeds Nyquist ({fn:.2f} Hz); adjusted to {fhc:.2f} Hz")
 
+        # second-order sections: the (b, a) form has poles outside the unit circle
+        # for low flc/fn (e.g. flc = 0.01 Hz at dt = 0.005 s) and the output diverges
         wn = [flc / fn, fhc / fn]
-        b, a = butter(order, wn, btype='band')
-        filtered = filtfilt(b, a, signal)
+        sos = butter(order, wn, btype='band', output='sos')
+        filtered = sosfiltfilt(sos, signal)
         return filtered
