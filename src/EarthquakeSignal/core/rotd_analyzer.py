@@ -8,7 +8,7 @@ class RotDSpectrumAnalyzer:
     """
 
     @staticmethod
-    def compute_rotd(H1, H2, dt, damping=0.05):
+    def compute_rotd(H1, H2, dt, damping=0.05, angles=None):
         """
         Parameters
         ----------
@@ -20,13 +20,23 @@ class RotDSpectrumAnalyzer:
             Time step of the input signals.
         damping : float
             Damping ratio (default is 5%).
+        angles : np.ndarray, optional
+            Rotation angle grid in degrees. Defaults to 0-180 deg every 5 deg
+            (37 angles), matching the original behavior. RotD00/50/100 are
+            invariant to widening this to a full 0-360 deg sweep (every PSa
+            value here is symmetric under theta -> theta+180, since negating
+            the forcing negates the response and peaks are absolute values),
+            so callers needing a full-circle grid (e.g. to line up with a
+            signed-peak IM computed elsewhere) can pass
+            `np.arange(0, 361, step)` without changing RotD00/50/100 results.
 
         Returns
         -------
         dict
             Dictionary containing ROTD00, ROTD50, ROTD100, angles, and PSA matrix.
         """
-        angles = np.arange(0, 181, 5)
+        if angles is None:
+            angles = np.arange(0, 181, 5)
         psa_matrix = []
 
         for angle in angles:
@@ -34,7 +44,7 @@ class RotDSpectrumAnalyzer:
             result = NewmarkSpectrumAnalyzer.compute(rot, dt, damping)
             psa_matrix.append(result["PSa"])
 
-        psa_matrix = np.array(psa_matrix).T  # Shape: (n_periods, 181)
+        psa_matrix = np.array(psa_matrix).T  # Shape: (n_periods, len(angles))
 
         rotd00 = np.percentile(psa_matrix, 0, axis=1)
         rotd50 = np.percentile(psa_matrix, 50, axis=1)
@@ -59,6 +69,7 @@ class RotDSpectrumAnalyzer:
 
         return {
             "T": result["T"],
+            "angles": angles,
             "ROTD00": rotd00,
             "ROTD50": rotd50,
             "ROTD100": rotd100,
