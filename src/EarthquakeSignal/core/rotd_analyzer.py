@@ -36,7 +36,7 @@ class RotDSpectrumAnalyzer:
             Dictionary containing ROTD00, ROTD50, ROTD100, angles, and PSA matrix.
         """
         if angles is None:
-            angles = np.arange(0, 181, 5)
+            angles = np.arange(0, 180, 5)  # 0-175 deg: 180 deg is the same orientation as 0 deg
         psa_matrix = []
 
         for angle in angles:
@@ -46,17 +46,24 @@ class RotDSpectrumAnalyzer:
 
         psa_matrix = np.array(psa_matrix).T  # Shape: (n_periods, len(angles))
 
-        rotd00 = np.percentile(psa_matrix, 0, axis=1)
-        rotd50 = np.percentile(psa_matrix, 50, axis=1)
-        rotd100 = np.percentile(psa_matrix, 100, axis=1)
+        # percentiles over distinct orientations only (theta and theta + 180 give the
+        # same PSa), so a 0-360 or 0-180 inclusive grid does not count one twice
+        _, unique_idx = np.unique(np.round(np.mod(angles, 180), 9), return_index=True)
+        psa_unique = psa_matrix[:, unique_idx]
+        angles_unique = np.asarray(angles)[unique_idx]
 
-        idx00 = np.argmax(psa_matrix == rotd00[:, None], axis=1)
-        idx50 = np.argmax(psa_matrix == rotd50[:, None], axis=1)
-        idx100 = np.argmax(psa_matrix == rotd100[:, None], axis=1)
+        rotd00 = np.percentile(psa_unique, 0, axis=1)
+        rotd50 = np.percentile(psa_unique, 50, axis=1)
+        rotd100 = np.percentile(psa_unique, 100, axis=1)
 
-        angle00 = angles[idx00]
-        angle50 = angles[idx50]
-        angle100 = angles[idx100]
+        # angle whose PSa is closest to each percentile (the median is interpolated)
+        idx00 = np.argmin(np.abs(psa_unique - rotd00[:, None]), axis=1)
+        idx50 = np.argmin(np.abs(psa_unique - rotd50[:, None]), axis=1)
+        idx100 = np.argmin(np.abs(psa_unique - rotd100[:, None]), axis=1)
+
+        angle00 = angles_unique[idx00]
+        angle50 = angles_unique[idx50]
+        angle100 = angles_unique[idx100]
 
         geo_mean = np.sqrt(np.abs(H1 * H2))
         gm_result = NewmarkSpectrumAnalyzer.compute(geo_mean, dt, damping)
