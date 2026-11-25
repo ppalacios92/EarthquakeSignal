@@ -50,15 +50,13 @@ class FourierAnalyzer:
         N = len(signal)
         Fs = 1.0 / dt
 
-        # Frequency axis for the one-sided FFT
-        freqs = Fs * np.arange(0, N // 2) / N
-
-        # Compute FFT and one-sided power spectrum
-        Y = np.fft.fft(signal)
-        Pyy = np.abs(Y[:N // 2])**2 / N
+        # One-sided FFT, 0 to Nyquist included (even and odd N)
+        freqs = np.fft.rfftfreq(N, d=dt)
+        Y = np.fft.rfft(signal)
+        Pyy = np.abs(Y)**2 / N
 
         # Identify spectral peaks with minimum prominence and spacing
-        peaks, properties = find_peaks(Pyy, prominence=1e-6, distance= int(len(Pyy) * 0.02))
+        peaks, properties = find_peaks(Pyy, prominence=1e-6, distance=max(1, int(len(Pyy) * 0.02)))
         peak_amplitudes = Pyy[peaks]
         peak_freqs = freqs[peaks]
 
