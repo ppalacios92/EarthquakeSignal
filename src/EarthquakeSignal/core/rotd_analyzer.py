@@ -65,14 +65,13 @@ class RotDSpectrumAnalyzer:
         angle50 = angles_unique[idx50]
         angle100 = angles_unique[idx100]
 
-        geo_mean = np.sqrt(np.abs(H1 * H2))
-        gm_result = NewmarkSpectrumAnalyzer.compute(geo_mean, dt, damping)
-
-        arith_mean = 0.5 * (H1 + H2)
-        am_result = NewmarkSpectrumAnalyzer.compute(arith_mean, dt, damping)
-
-        srss = np.sqrt(H1**2 + H2**2)
-        srss_result = NewmarkSpectrumAnalyzer.compute(srss, dt, damping)
+        # component combinations act on the spectra, not on the time series
+        # (Boore et al., 2006): combining H1, H2 first gives a non-physical record
+        psa1 = NewmarkSpectrumAnalyzer.compute(H1, dt, damping)["PSa"]
+        psa2 = NewmarkSpectrumAnalyzer.compute(H2, dt, damping)["PSa"]
+        gm_result = {"PSa": np.sqrt(psa1 * psa2)}
+        am_result = {"PSa": 0.5 * (psa1 + psa2)}
+        srss_result = {"PSa": np.sqrt(psa1**2 + psa2**2)}
 
         return {
             "T": result["T"],
