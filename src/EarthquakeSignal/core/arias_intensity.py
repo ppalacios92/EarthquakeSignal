@@ -12,6 +12,7 @@ __author__ = "Ing. Patricio Palacios B., M.Sc."
 __version__ = "1.0.0"
 
 import numpy as np
+from scipy.integrate import cumulative_trapezoid
 
 class AriasIntensityAnalyzer:
     """
@@ -26,7 +27,7 @@ class AriasIntensityAnalyzer:
         Parameters
         ----------
         signal : np.ndarray
-            Acceleration signal in units of [m/s^2].
+            Acceleration signal in units of [g] (converted to m/s^2 inside).
         dt : float
             Time step in seconds.
 
@@ -48,7 +49,8 @@ class AriasIntensityAnalyzer:
         t = np.arange(len(signal)) * dt
 
         # Arias intensity curve (non-normalized)
-        IA = (np.pi / (2 * g)) * np.cumsum(signal**2) * dt
+        # trapezoidal rule, IA(0) = 0
+        IA = (np.pi / (2 * g)) * cumulative_trapezoid(signal**2, dx=dt, initial=0)
         ia_total = IA[-1]
 
         # Normalized to 100%
