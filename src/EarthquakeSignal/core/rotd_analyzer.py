@@ -21,14 +21,13 @@ class RotDSpectrumAnalyzer:
         damping : float
             Damping ratio (default is 5%).
         angles : np.ndarray, optional
-            Rotation angle grid in degrees. Defaults to 0-180 deg every 5 deg
-            (37 angles), matching the original behavior. RotD00/50/100 are
-            invariant to widening this to a full 0-360 deg sweep (every PSa
-            value here is symmetric under theta -> theta+180, since negating
-            the forcing negates the response and peaks are absolute values),
-            so callers needing a full-circle grid (e.g. to line up with a
-            signed-peak IM computed elsewhere) can pass
-            `np.arange(0, 361, step)` without changing RotD00/50/100 results.
+            Rotation angle grid in degrees. Defaults to 0-175 deg every 5 deg
+            (36 distinct orientations). Every PSa value is symmetric under
+            theta -> theta+180 (negating the forcing negates the response and
+            peaks are absolute values), so a full-circle grid such as
+            `np.arange(0, 361, step)` can be passed (e.g. to line up with a
+            signed-peak IM computed elsewhere): the percentiles use each
+            orientation once, so RotD00/50/100 do not change.
 
         Returns
         -------
