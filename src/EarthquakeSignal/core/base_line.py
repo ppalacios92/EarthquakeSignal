@@ -91,7 +91,7 @@ class BaselineCorrection:
 
     @staticmethod
     
-    def bandpass_filter(signal: np.ndarray, dt: float, flc: float = 0.1, fhc: float = 25.0, order: int = 4):
+    def bandpass_filter(signal: np.ndarray, dt: float, flc: float = 0.01, fhc: float = 25.0, order: int = 4):
         """
         Apply a Butterworth bandpass filter to a signal.
 
