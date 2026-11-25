@@ -125,7 +125,7 @@ class EarthquakeBatchProcessor:
                         dt = time2 - time1
                         acc = [line.split()[1] for line in lines]
                         with open(dst_path, 'w') as out:
-                            out.write(f"NPTS={len(acc)}, DT={dt:.6f}\n")
+                            out.write(f"NPTS={len(acc)}, DT={dt:.10g}\n")
                             for a in acc:
                                 out.write(f"{a}\n")
                     else:
