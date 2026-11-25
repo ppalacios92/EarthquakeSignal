@@ -21,6 +21,7 @@ from EarthquakeSignal.core.arias_intensity import AriasIntensityAnalyzer
 from EarthquakeSignal.core.fourier_analyzer import FourierAnalyzer
 from EarthquakeSignal.core.newmark_spectrum_analyzer import NewmarkSpectrumAnalyzer
 from EarthquakeSignal.core.rotd_analyzer import RotDSpectrumAnalyzer
+from EarthquakeSignal.core.im_rotation_analyzer import IMRotationAnalyzer
 
 from EarthquakeSignal.tools.earthquake_summary import EarthquakeSummary
 from EarthquakeSignal.tools.earthquake_plotter import EarthquakePlotter
@@ -51,6 +52,7 @@ class EarthquakeSignal:
         self.arias = {}
         self.newmark_spectra = {}
         self.rotd = {}
+        self.im_rotation = {}
         self.fourier = {}
 
         # Tools
@@ -77,6 +79,8 @@ class EarthquakeSignal:
             self._compute_newmark_spectra()
         if self.config.get('compute_rotd', False):
             self._compute_rotd()
+        if self.config.get('compute_im_rotation', False):
+            self._compute_im_rotation()
         if self.config.get('print_summary', False):
             self.print_summary()
         if self.config.get('plot_signals', False):
@@ -107,8 +111,15 @@ class EarthquakeSignal:
 
     def _apply_baseline_correction_frecuency_filter(self):
         print('-- start apply base line & Frecuency Filters-->Done!')
+        # Filter passband and order are taken from the config dict so the
+        # caller controls the Butterworth bandpass limits per run. Defaults
+        # are the standard strong-motion band 0.01-25 Hz, order 4.
+        flc = self.config.get('filter_flc', 0.01)
+        fhc = self.config.get('filter_fhc', 25.0)
+        order = self.config.get('filter_order', 4)
         for comp, signal in self.signals.items():
-            filtered_signal = BaselineCorrection.bandpass_filter(signal, self.dt , flc = 0.1, fhc = 24.9, order= 4)
+            filtered_signal = BaselineCorrection.bandpass_filter(
+                signal, self.dt, flc=flc, fhc=fhc, order=order)
             acc_corr, vel_corr, disp_corr = BaselineCorrection.apply(filtered_signal, self.dt)
 
             # acc_corr, vel_corr, disp_corr = BaselineCorrection.apply(signal, self.dt)
@@ -173,7 +184,16 @@ class EarthquakeSignal:
         print('-- start compute rotd-->Done!')
         h1 = self.corrected_acc['H1']
         h2 = self.corrected_acc['H2']
-        self.rotd = RotDSpectrumAnalyzer.compute_rotd(h1, h2, self.dt)
+        self.rotd = RotDSpectrumAnalyzer.compute_rotd(h1, h2, self.dt, angles=self.config.get('rotd_angles'))
+
+    def _compute_im_rotation(self):
+        print('-- start compute im rotation-->Done!')
+        self.im_rotation = IMRotationAnalyzer.compute(
+            self.corrected_acc['H1'], self.corrected_acc['H2'],
+            self.corrected_vel['H1'], self.corrected_vel['H2'],
+            self.corrected_disp['H1'], self.corrected_disp['H2'],
+            angles=self.config.get('rotd_angles'),
+        )
 
     def print_summary(self):
         self.summary_tool.print_summary()
